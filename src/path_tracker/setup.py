@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = "controller"
+package_name = "path_tracker"
 
 setup(
     name=package_name,
@@ -13,7 +13,7 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="vsukhil",
-    maintainer_email="vsukhil@todo.todo",
+    maintainer_email="vsukhil@gmail.com",
     description="TODO: Package description",
     license="TODO: License declaration",
     tests_require=["pytest"],
