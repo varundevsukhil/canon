@@ -57,3 +57,7 @@ def dynamic_link():
     rclpy.init()
     node = DynamicTF()
     rclpy.spin(node)
+
+
+if __name__ == "__main__":
+    dynamic_link()
