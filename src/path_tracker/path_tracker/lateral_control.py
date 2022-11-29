@@ -40,8 +40,8 @@ class LateralControl(object):
     def yaw_from_quat(self, quat: Quaternion) -> float:
         
         # extract yaw (radians) from quaternion rotation
-        x   = 1.0 - 2.0 * (math.pow(quat.y, 2) + math.pow(quat.z, 2))
-        y   = 2.0 * (quat.w * quat.z + quat.x * quat.y)
+        x = 1.0 - 2.0 * (math.pow(quat.y, 2) + math.pow(quat.z, 2))
+        y = 2.0 * (quat.w * quat.z + quat.x * quat.y)
         yaw = math.atan2(y, x)
         return(yaw)
     
@@ -73,12 +73,38 @@ class LateralControl(object):
         
         # iteratively predict the trajectory of the racecar
         # while it travels at the current velocity and proposed steer
-        predictions = PoseArray()
+        prediction = PoseArray()
         for i in range(self.prediction_duration_N):
-            prediction = Pose()
+            pose = Pose()
             x, y, yaw = self.predict_next_cycle(x, y, yaw, vel, candidate_steer)
-            prediction.position.x, prediction.position.y = x, y
-            prediction.orientation = self.quat_from_yaw(yaw)
-            predictions.poses.append(prediction)
-        return(predictions)
-            
+            pose.position.x, prediction.position.y = x, y
+            pose.orientation = self.quat_from_yaw(yaw)
+            prediction.poses.append(prediction)
+        return(prediction)
+    
+    def candidate_maneuver_cost(self, prediction: PoseArray, reference: PoseArray, ref_lateral_sep: float) -> float:
+        
+        # for every prediction tick, compute the Euclidean seperation to the reference at the corresponding index
+        # find the target prediction to minimize cost based on the lateral seperation reported
+        # append the total cost based on the target index (damping coeff.)
+        cost = 0.0
+        for i in range(self.prediction_duration_N):
+            tick_cost = math.hypot(prediction.poses[i].position.x - reference.poses[i].position.x, prediction.poses[i].position.y - reference.poses[i].position.y)
+            tick_damp_coeff = min(int(abs(ref_lateral_sep)), self.prediction_duration_N)
+            cost += tick_cost / math.pow(abs(tick_damp_coeff - i) + 1, 3)
+        return(cost)
+    
+    def compute_optimal_steering_candidate(self, curr_state: Odometry, reference: PoseArray, ref_lateral_sep: float) -> float:
+        
+        # find the maneuver cost for each candidate
+        candidate_cost = []
+        for candidate in self.candidates:
+            prediction = self.predict_full_horizon(curr_state, candidate)
+            candidate_cost.append(self.candidate_maneuver_cost(prediction, reference, ref_lateral_sep))
+        
+        # the minimal maneuver cost is the optimal steer input to the racecar
+        # invert the optimal steer and normalinze it using the max_angle and damper ratio
+        optimal_steer = self.candidates[candidate_cost.index(min(candidate_cost))]
+        optimal_steer *= -1.0
+        optimal_steer /= max(self.candidates) / self.damper_ratio
+        return(optimal_steer)
