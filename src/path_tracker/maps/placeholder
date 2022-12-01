@@ -1,6 +1,0 @@
-This directory contains the CSV maps for the ARGOS project
-
-The CSV is to be created using the following format:
-[0] x_pos - target x position in local frame
-[1] y_pos - target y position in local frame
-[2] v_tgt - target velocity setpoint for {x_pos, y_pos}
