@@ -74,7 +74,7 @@ class BoundsCreator(object):
         rel_path = os.path.join(get_package_share_directory("canon"), "maps")
         for i in range(len(_ix)):  inside_bounds_file.writerow([_ix[i], _iy[i]])
         for i in range(len(_ox)):  outside_bounds_file.writerow([_ox[i], _oy[i]])
-        for i in range(len(_cx)):  centerline_file.writerow([_cx[i], _cy[i], T_WIDTH / 2.0])
+        for i in range(len(_cx)):  centerline_file.writerow([_cx[i], _cy[i], T_WIDTH / 2.0, T_WIDTH / 2.0])
 
         # visualize the points
         _, fig = plt.subplots(1, 1)
