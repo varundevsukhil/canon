@@ -26,7 +26,8 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            f"bounds_logger   = {package_name}.bounds_logger:bounds_logger",
+            f"bounds_logger = {package_name}.bounds_logger:bounds_logger",
+            f"path_tracker = {package_name}.path_tracker:path_tracker",
         ],
     },
 )

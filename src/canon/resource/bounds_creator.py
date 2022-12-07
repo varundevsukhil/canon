@@ -43,14 +43,14 @@ class BoundsCreator(object):
         _ix = np.array([point[0] for point in inside_points])
         _iy = np.array([point[1] for point in inside_points])
         tck, _ = interpolate.splprep([_ix, _iy], s = 0, per = True)
-        _ix, _iy = interpolate.splev(np.linspace(0, 1, int(len(_ix) * 25)), tck)
+        _ix, _iy = interpolate.splev(np.linspace(0, 1, int(len(_ix) * 12)), tck)
 
         # interpolate the inside bounds
         # resample outside bounds until resolution is ~1.0m
         _ox = np.array([point[0] for point in outside_points])
         _oy = np.array([point[1] for point in outside_points])
         tck, _ = interpolate.splprep([_ox, _oy], s = 0, per = True)
-        _ox, _oy = interpolate.splev(np.linspace(0, 1, int(len(_ox) * 25)), tck)
+        _ox, _oy = interpolate.splev(np.linspace(0, 1, int(len(_ox) * 12)), tck)
 
         # find the centerline
         center_points = []

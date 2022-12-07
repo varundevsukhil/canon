@@ -9,7 +9,7 @@ import numpy as np
 from ament_index_python.packages import get_package_share_directory
 
 PL_WIDTH = 8.0
-DESIRED_RES = 1.0
+DESIRED_RES = 2.0
 
 class PitlaneCreator(object):
 
