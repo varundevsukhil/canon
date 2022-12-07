@@ -20,17 +20,17 @@ class SplineVisualizer(object):
         data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/inside_bounds.csv")), delimiter = ",")
         for point in data_file: _ix.append(float(point[0])), _iy.append(float(point[1]))
 
-         # read the interpolated points for the outside boundary
+        # read the interpolated points for the outside boundary
         _ox, _oy = [], []
         data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/outside_bounds.csv")), delimiter = ",")
         for point in data_file: _ox.append(float(point[0])), _oy.append(float(point[1]))
 
-         # read the interpolated points for the centerline
+        # read the interpolated points for the centerline
         _cx, _cy = [], []
         data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/centerline.csv")), delimiter = ",")
         for point in data_file: _cx.append(float(point[0])), _cy.append(float(point[1]))
 
-         # read the interpolated points for the optimal raceline
+        # read the interpolated points for the optimal raceline
         _opx, _opy = [], []
         data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/optimal.csv")), delimiter = ",")
         for point in data_file: _opx.append(float(point[0])), _opy.append(float(point[1]))
