@@ -52,7 +52,7 @@ class BoundsCreator(object):
         tck, _ = interpolate.splprep([_ox, _oy], s = 0, per = True)
         _ox, _oy = interpolate.splev(np.linspace(0, 1, int(len(_ox) * 25)), tck)
 
-        # find the center line
+        # find the centerline
         center_points = []
         for i in range(len(_ix)):
             _ranges = []
@@ -71,7 +71,6 @@ class BoundsCreator(object):
         _cx, _cy = interpolate.splev(np.linspace(0, 1, int(len(_cx))), tck)
     
         # save splines to "maps" directory
-        rel_path = os.path.join(get_package_share_directory("canon"), "maps")
         for i in range(len(_ix)):  inside_bounds_file.writerow([_ix[i], _iy[i]])
         for i in range(len(_ox)):  outside_bounds_file.writerow([_ox[i], _oy[i]])
         for i in range(len(_cx)):  centerline_file.writerow([_cx[i], _cy[i], T_WIDTH / 2.0, T_WIDTH / 2.0])

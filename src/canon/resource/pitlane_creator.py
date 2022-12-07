@@ -9,6 +9,7 @@ import numpy as np
 from ament_index_python.packages import get_package_share_directory
 
 PL_WIDTH = 8.0
+DESIRED_RES = 1.0
 
 class PitlaneCreator(object):
 
@@ -39,7 +40,7 @@ class PitlaneCreator(object):
         _pix = np.array([point[0] for point in pitlane_inside_bounds])
         _piy = np.array([point[1] for point in pitlane_inside_bounds])
         
-        # find the center line
+        # find the pitlane centerline
         center_points = []
         for i in range(len(_pix)):
             _ranges = []
@@ -54,12 +55,27 @@ class PitlaneCreator(object):
             center_points.append([_cx, _cy, _min_width])
         _pcx = np.array([point[0] for point in center_points])
         _pcy = np.array([point[1] for point in center_points])
+
+        # interpolate the pitlane centerline manually
+        interpolated_centerline = [center_points[0]]
+        for i in range(1, len(center_points)):
+            while math.hypot(interpolated_centerline[-1][0] - center_points[i][0], interpolated_centerline[-1][1] - center_points[i][1]) > DESIRED_RES:
+                _theta = math.atan2(center_points[i][1] - interpolated_centerline[-1][1], center_points[i][0] - interpolated_centerline[-1][0])
+                _ipx = interpolated_centerline[-1][0] + math.cos(_theta) * DESIRED_RES
+                _ipy = interpolated_centerline[-1][1] + math.sin(_theta) * DESIRED_RES
+                interpolated_centerline.append([_ipx, _ipy])
+        _ipcx = np.array([point[0] for point in interpolated_centerline])
+        _ipcy = np.array([point[1] for point in interpolated_centerline])
+
+        # save the pitlane centerline to the "maps" directory
+        for i in range(len(_ipcx)): pitlane_file.writerow([_ipcx[i], _ipcy[i]])
         
         # visualize the points
         _, fig = plt.subplots(1, 1)
         fig.plot(_pix, _piy, "k+")
         fig.plot(_pox, _poy, "k+")
         fig.plot(_pcx, _pcy, "r+")
+        fig.plot(_ipcx, _ipcy, "g+")
         fig.set_aspect("equal", "box")
         plt.show()
 
