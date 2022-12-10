@@ -6,7 +6,7 @@ import csv
 import sys
 import math
 
-from enum import IntEnum
+from dataclasses import dataclass
 from typing import Tuple
 from rclpy.node import Node
 from std_msgs.msg import Float64
@@ -17,13 +17,35 @@ from geometry_msgs.msg import Quaternion, Transform, TransformStamped, Vector3
 from tf2_ros import TransformBroadcaster
 from ament_index_python.packages import get_package_share_directory
 
-class SplineIdentifier(IntEnum):
-    ActiveRaceline = 0
-    TrackInnerBounds = 1
-    TrackOuterBounds = 2
+@dataclass
+class PTConstants:
+
+    # spline identifiers
+    OptimalRaceline: int = 0
+    TrackInnerBounds: int = 1
+    TrackOuterBounds: int = 2
+
+    # spline adjusted velocity
+    OptimalRacelineVelocity: float = 70.0
+    PitlaneVelocity: float = 15.0
+
+    # pitlane spline switch triggers
+    PitlaneExitDistanceTrigger: float = 10.0
+    PitlaneEntryDistanceTrigger: float = 50.0
+
+@dataclass
+class LongitudinalGains:
+
+    # PID gains for the longitudinal controller
+    P_gain: float = 0.15
+    I_gain: float = 0.001
+    D_gain: float = 0.015
 
 class PathTracker(Node):
-
+    """
+    Kinematic bicycle model based MPC path tracker.
+    """
+    
     def __init__(self, racecar_ns: str) -> None:
 
         # ROS node init
@@ -48,13 +70,19 @@ class PathTracker(Node):
         self.dyn_range_loc = (100, 200, 200)
 
         # lateral control parameters
+        self.steer_max = 1.0
         steer_max = 2.0
-        angle_max = 20.0
         gradient = 0.005
         candidates = [candidate * gradient for candidate in range(int(steer_max / gradient))]
         negatives = [-candidate for candidate in candidates[1:]]
         self.candidates = [math.radians(candidate) for candidate in negatives[::-1] + candidates]
-        self.steer_damping_factor = max(self.candidates) / angle_max / steer_max
+
+        # longitudinal control parameters
+        self.power_max = 1.0
+        self.brake_max = 1.0
+        self.prev_error = 0.0
+        self.steady_err = [0.0] * 50
+        self.coast_vel = 5.0
 
         # path tracker parameters
         self.wheelbase_len = 3.0
@@ -63,12 +91,18 @@ class PathTracker(Node):
         self.min_speed = 5.0
         self.max_speed = 40.0
 
+        # persistent vehicle command and actuator rate limiter
+        self.actuation_rate = 0.0025
+        self.command = VehicleControlData()
+
         # node publishers
         self.lat_err_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_tracker/lat_err", 1)
         self.lon_err_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_tracker/lon_err", 1)
         self.inner_bounds_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_server/inner_bounds", 1)
         self.outer_bounds_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_server/outer_bounds", 1)
         self.target_ref_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_server/target_spline", 1)
+        self.optimal_pred_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_tracker/optimal_prediction", 1)
+        self.command_pub = self.create_publisher(VehicleControlData, f"/{racecar_ns}/command", 1)
 
         # node spinners and callbacks
         self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.path_tracker_node, 1)
@@ -149,9 +183,9 @@ class PathTracker(Node):
     def localize_racecar(self, state: Odometry) -> Tuple[Tuple[int], Tuple[float]]:
 
         # localize the racecar for the active raceline and the track bounds
-        _raceline_loc_idx, _raceline_lat_sep = self.localize_racecar_on_spline(state, int(SplineIdentifier.ActiveRaceline), self.first_loc_found)
-        _inner_bounds_loc_idx, _inner_bounds_lat_sep = self.localize_racecar_on_spline(state, int(SplineIdentifier.TrackInnerBounds), self.first_loc_found)
-        _outer_bounds_loc_idx, _outer_bounds_lat_sep = self.localize_racecar_on_spline(state, int(SplineIdentifier.TrackOuterBounds), self.first_loc_found)
+        _raceline_loc_idx, _raceline_lat_sep = self.localize_racecar_on_spline(state, PTConstants.OptimalRaceline, self.first_loc_found)
+        _inner_bounds_loc_idx, _inner_bounds_lat_sep = self.localize_racecar_on_spline(state, PTConstants.TrackInnerBounds, self.first_loc_found)
+        _outer_bounds_loc_idx, _outer_bounds_lat_sep = self.localize_racecar_on_spline(state, PTConstants.TrackOuterBounds, self.first_loc_found)
 
         # localizer initialization is always set true after the first cycle,
         # unless it is reset by an outside method
@@ -165,7 +199,6 @@ class PathTracker(Node):
 
         # calcluate the skip index interval based on the current racecar velocity
         idx_skip = max(int(vel * self.time_tick / self.splines_res[target_tup_idx]), 1)
-        print(vel * self.time_tick / self.splines_res[target_tup_idx])
         loc_idx = self.known_loc_idx[target_tup_idx]
         reference = PoseArray()
         reference.header.frame_id = "map"
@@ -191,9 +224,9 @@ class PathTracker(Node):
         vel = min(max(vel, self.min_speed), self.max_speed)
 
         # assemble reference spline pose array for the active raceline and the track bounds
-        _raceline_ref = self.assemble_reference_points(vel, int(SplineIdentifier.ActiveRaceline), False)
-        _inner_bounds_ref = self.assemble_reference_points(vel, int(SplineIdentifier.TrackInnerBounds), True)
-        _outer_bounds_ref = self.assemble_reference_points(vel, int(SplineIdentifier.TrackOuterBounds), True)
+        _raceline_ref = self.assemble_reference_points(vel, PTConstants.OptimalRaceline, False)
+        _inner_bounds_ref = self.assemble_reference_points(vel, PTConstants.TrackInnerBounds, True)
+        _outer_bounds_ref = self.assemble_reference_points(vel, PTConstants.TrackOuterBounds, True)
         return(_raceline_ref, _inner_bounds_ref, _outer_bounds_ref)
 
     def yaw_from_quaternion(self, quat: Quaternion) -> float:
@@ -244,18 +277,55 @@ class PathTracker(Node):
             cost += cost_i / math.pow(target_i, 3)
         return(cost)
     
-    def calculate_optimal_steer_candidate(self, state: Odometry, reference: PoseArray, _ref_lat_err: float) -> float:
+    def calculate_optimal_steer_candidate(self, state: Odometry, reference: PoseArray, _ref_lat_err: float) -> PoseArray:
 
         # gather predictions for each candidate in the steering candidates
         # compute the maneuver cost for each of the steering candidates
         # the minimum cost index corresponds to the optimal steering candidate
         predictions = [self.predict_motion_for_candidate(state, candidate) for candidate in self.candidates]
         candidates_costs = [self.estimate_maneuver_cost(prediction, reference, _ref_lat_err) for prediction in predictions]
-        optimal_candidate = self.candidates[candidates_costs.index(min(candidates_costs))]
-        
+        optimal_idx = candidates_costs.index(min(candidates_costs))
+
         # apply the output adjusted for steering damping ration
-        optimal_candidate = -1.0 * optimal_candidate / self.steer_damping_factor
-        return(optimal_candidate)
+        steer = -1.0 * self.candidates[optimal_idx]
+        print(steer)
+
+        # enforce actuation rate limits for steering
+        steer_p = self.command.target_wheel_angle
+        steer_pi, steer_pd = steer_p + self.actuation_rate, steer_p - self.actuation_rate
+        self.command.target_wheel_angle = steer_pi if steer > steer_pi else steer_pd if steer < steer_pd else steer
+
+        # return optimal candidate steer prediction
+        return(self.predict_motion_for_candidate(state, -self.command.target_wheel_angle))
+    
+    def calculate_drivetrain_inputs(self, state: Odometry) -> None:
+
+        # get current velocity and tracking error
+        vel = math.hypot(state.twist.twist.linear.x, state.twist.twist.linear.y)
+        err = PTConstants.OptimalRacelineVelocity - vel
+
+        if err > 0:
+            power = 0.0
+            power += err * LongitudinalGains.P_gain 
+            power += (self.prev_error - err) * LongitudinalGains.D_gain
+            power += sum(self.steady_err) / len(self.steady_err) * LongitudinalGains.I_gain
+
+            power = min(max(0.0, power), self.power_max)
+            brake = 0.0
+            self.prev_error = err
+            self.steady_err = self.steady_err[1:] + [err]
+
+        elif abs(err) > self.coast_vel:
+            power = 0.0
+            brake = err / PTConstants.OptimalRacelineVelocity * self.brake_max
+            brake = min(max(0.0, brake), self.brake_max)
+
+        # enfore actuation rate limits for the powertrain
+        power_p, brake_p = self.command.acceleration_pct, self.command.braking_pct
+        power_pi, brake_pi = power_p + self.actuation_rate, brake_p + self.actuation_rate
+        power_pd, brake_pd = power_p - self.actuation_rate, brake_p - self.actuation_rate
+        self.command.acceleration_pct = power_pi if power > power_pi else power_pd if power < power_pd else power
+        self.command.braking_pct = brake_pi if brake > brake_pi else brake_pd if brake < brake_pd else brake
 
     def path_tracker_node(self, state: Odometry) -> None:
 
@@ -263,14 +333,21 @@ class PathTracker(Node):
         self.assemble_dynamic_tf(state)
         self.known_loc_idx, lat_err = self.localize_racecar(state)
         refs = self.assemble_references(state)
-        command_steer = self.calculate_optimal_steer_candidate(state, refs[int(SplineIdentifier.ActiveRaceline)], lat_err[int(SplineIdentifier.ActiveRaceline)])
+
+        # computer steer and drivetrain inputs
+        pt_ref = refs[PTConstants.OptimalRaceline]
+        pt_lat_err = lat_err[PTConstants.OptimalRaceline]
+        pred = self.calculate_optimal_steer_candidate(state, pt_ref, pt_lat_err)
+        self.calculate_drivetrain_inputs(state)
 
         # pubish all the desired information
         self.tf_pub.sendTransform(self.tf)
-        self.lat_err_pub.publish(Float64(data = lat_err[int(SplineIdentifier.ActiveRaceline)]))
-        self.inner_bounds_pub.publish(refs[int(SplineIdentifier.TrackInnerBounds)])
-        self.outer_bounds_pub.publish(refs[int(SplineIdentifier.TrackOuterBounds)])
-        self.target_ref_pub.publish(refs[int(SplineIdentifier.ActiveRaceline)])
+        self.lat_err_pub.publish(Float64(data = lat_err[PTConstants.OptimalRaceline]))
+        self.inner_bounds_pub.publish(refs[PTConstants.TrackInnerBounds])
+        self.outer_bounds_pub.publish(refs[PTConstants.TrackOuterBounds])
+        self.target_ref_pub.publish(refs[PTConstants.OptimalRaceline])
+        self.optimal_pred_pub.publish(pred)
+        self.command_pub.publish(self.command)
 
 def path_tracker():
     rclpy.init()
