@@ -31,8 +31,11 @@ class PSParams:
     fixed_search_range: int = 100
     time_tick: float = 0.4
     horizon_len: int = 10
-    min_speed: float = 5.0
-    max_speed: float = 15.0
+    pt_node_speed: float = 20.0
+
+    pitlane_vel: float = 15.0
+    optimal_vel: float = 60.0
+    overtake_vel: float = 70.0
 
 # each point on the spline is a pose
 # we only care about {x, y, theta}, but ROS requires Quaternion
@@ -43,6 +46,7 @@ class PSIndex:
     y: int = 1
     rot_z: int = 2
     rot_w: int = 3
+    vel: int = 4
 
 class PathServer(Node):
     """
@@ -55,8 +59,8 @@ class PathServer(Node):
         super().__init__(f"{racecar_ns}_path_server")
 
         # the static spline resources
-        _pitlane, _pitlane_res = self.read_splines_info("pitlane_centerline")
-        _optimal, _optimal_res = self.read_splines_info("optimal")
+        _pitlane, _pitlane_res = self.read_splines_info("pitlane_centerline", PSParams.pitlane_vel)
+        _optimal, _optimal_res = self.read_splines_info("optimal", PSParams.optimal_vel)
         self.spline_points = (_pitlane, _optimal)
         self.spline_res = (_pitlane_res, _optimal_res)
 
@@ -70,6 +74,7 @@ class PathServer(Node):
         self.pt_spline.header.frame_id = "map"
         self.lat_err_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_server/lat_err", QoSReliabilityPolicy.BEST_EFFORT)
         self.spline_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_server/spline", QoSReliabilityPolicy.BEST_EFFORT)
+        self.ref_vel_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_server/ref_vel", QoSReliabilityPolicy.BEST_EFFORT)
 
         # node subscribers and spinners
         self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.path_server_node, QoSReliabilityPolicy.BEST_EFFORT)
@@ -89,7 +94,7 @@ class PathServer(Node):
         _quat_w = math.cos(yaw / 2.0)
         return(_quat_z, _quat_w)
 
-    def read_splines_info(self, name: str) -> Tuple[np.ndarray, float]:
+    def read_splines_info(self, name: str, encoded_vel: float) -> Tuple[np.ndarray, float]:
 
         # read spline points from the CSV and store it in the main class
         rel_path = os.path.join(get_package_share_directory("canon"), "maps")
@@ -97,14 +102,14 @@ class PathServer(Node):
         raw_pts = [[float(point[0]), float(point[1])] for point in raw_pts]
 
         # convert the trajectory to an np.array of poses
-        _points = np.empty([len(raw_pts), 4])
+        _points = np.empty([len(raw_pts), 5])
         for i in range(len(raw_pts)):
             _next = (i + 1) % len(raw_pts)
             _x, _y = raw_pts[i][PSIndex.x], raw_pts[i][PSIndex.y]
             _nx, _ny = raw_pts[_next][PSIndex.x], raw_pts[_next][PSIndex.y]
             _yaw = math.atan2(_ny - _y, _nx - _x)
             _qz, _qw = self.yaw_to_quaternion(_yaw)
-            _points[i] = np.array([_x, _y, _qz, _qw])
+            _points[i] = np.array([_x, _y, _qz, _qw, encoded_vel])
 
         # calculate the average spline resolution
         _res = np.empty(len(_points) - 1)
@@ -144,11 +149,8 @@ class PathServer(Node):
             _loc_index = self.loc_index + _ranges.index(_lat_err) - PSParams.fixed_search_range
             self.loc_index = _loc_index % len(self.spline_points[self.active_spline])
         
-        # calculate the current velocity and enforce bounds vioaltion
-        # then, calculate the skip index value based on the current velocity
-        vel = math.hypot(odom.twist.twist.linear.x, odom.twist.twist.linear.y)
-        vel = min(max(vel, PSParams.min_speed), PSParams.max_speed)
-        skip = int(vel * PSParams.time_tick * self.spline_res[self.active_spline])
+        # calculate the skip index value based on the current velocity
+        skip = int(PSParams.pt_node_speed * PSParams.time_tick / int(self.spline_res[self.active_spline]))
 
         # reset the reference poses and populate new references
         self.pt_spline.poses = []
@@ -163,6 +165,7 @@ class PathServer(Node):
         # send reference and lat_sep data to path_tracker
         self.spline_pub.publish(self.pt_spline)
         self.lat_err_pub.publish(Float64(data = _lat_err))
+        self.ref_vel_pub.publish(Float64(data = self.spline_points[self.active_spline][0][PSIndex.vel]))
 
 def path_server():
     rclpy.init()
