@@ -14,9 +14,9 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        (os.path.join('share', package_name), glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'maps'), glob('maps/*.csv')),
-        (os.path.join('share', package_name, 'data'), glob('data/*'))],
+        (os.path.join("share", package_name), glob("launch/*.launch.py")),
+        (os.path.join("share", package_name, "maps"), glob("maps/*.csv")),
+        (os.path.join("share", package_name, "data"), glob("data/*"))],
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="Varundev Sukhil",
@@ -26,8 +26,11 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            f"bounds_logger = {package_name}.bounds_logger:bounds_logger",
-            f"path_tracker = {package_name}.path_tracker:path_tracker",
+            f"{node} = {package_name}.{node}:{node}" for node in [
+                "bounds_logger", 
+                "path_tracker", 
+                "path_server",
+            ]
         ],
     },
 )
