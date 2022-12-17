@@ -27,8 +27,8 @@ class Pitlane:
     entry_pt: Point = Point(x = 13.5, y = 532.65)
 
     # switch distance trigger thresholds
-    exit_trig_dist: float = 75.0
-    entry_trig_dist: float = 150.0
+    exit_trig_dist: float = 25.0
+    entry_trig_dist: float = 75.0
 
 class SplineControl(Node):
 
@@ -55,6 +55,7 @@ class SplineControl(Node):
             _eucl_y = odom.pose.pose.position.y - Pitlane.exit_pt.y
             
             if math.hypot(_eucl_x, _eucl_y) < Pitlane.exit_trig_dist:
+                self.get_logger().info("exiting the pitlane")
                 self.desired_code = SCCode.optimal
                 self.on_racetrack = True
         

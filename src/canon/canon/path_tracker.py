@@ -30,7 +30,7 @@ class PTParams:
     wheelbase_len: float = 3.0
     time_tick: float = 0.4
     horizon_len: int = 10
-    pt_node_speed: float = 20.0
+    pt_node_speed: float = 10.0
     abs_max_speed: float = 80.0
 
     # longitudinal control parameters
@@ -91,7 +91,7 @@ class PathTracker(Node):
             _pose = spline.poses[i]
             _reference[i] = np.array([_pose.position.x, _pose.position.y])
         self.reference = _reference
-    
+
     def yaw_from_quaternion(self, quat: Quaternion) -> float:
 
         # extract yaw from quaternion
