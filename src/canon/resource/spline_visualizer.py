@@ -27,7 +27,7 @@ class SplineVisualizer(object):
 
         # read the interpolated points for the centerline
         _cx, _cy = [], []
-        data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/pitlane_centerline.csv")), delimiter = ",")
+        data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/offset.csv")), delimiter = ",")
         for point in data_file: _cx.append(float(point[0])), _cy.append(float(point[1]))
 
         # read the interpolated points for the optimal raceline
@@ -40,7 +40,7 @@ class SplineVisualizer(object):
         fig.plot(_ix, _iy, "k-")
         fig.plot(_ox, _oy, "k-")
         fig.plot(_cx, _cy, "r-")
-        fig.plot(_opx, _opy, "g+")
+        fig.plot(_opx, _opy, "g-")
         fig.set_aspect("equal", "box")
         plt.show()
       

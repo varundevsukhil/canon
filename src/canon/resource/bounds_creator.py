@@ -9,6 +9,7 @@ import numpy as np
 from scipy import interpolate
 from ament_index_python.packages import get_package_share_directory
 
+T_WIDTH_ACT = 12.0
 T_WIDTH = 9.0
 
 class BoundsCreator(object):
@@ -34,8 +35,8 @@ class BoundsCreator(object):
             _next_idx = (i + 1) % len(inside_points)
             _theta = math.atan2(inside_points[_next_idx][1] - inside_points[i][1], inside_points[_next_idx][0] - inside_points[i][0])
             _theta -= math.radians(90.0) # rotate outide by 90 degrees
-            _oxp = inside_points[i][0] + math.cos(_theta) * T_WIDTH
-            _oyp = inside_points[i][1] + math.sin(_theta) * T_WIDTH
+            _oxp = inside_points[i][0] + math.cos(_theta) * T_WIDTH_ACT
+            _oyp = inside_points[i][1] + math.sin(_theta) * T_WIDTH_ACT
             outside_points.append([_oxp, _oyp])
         
         # interpolate the inside bounds
