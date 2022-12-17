@@ -30,6 +30,8 @@ class PTParams:
     wheelbase_len: float = 3.0
     time_tick: float = 0.4
     horizon_len: int = 10
+    to_min_index: int = 4
+    cost_decay_f: float = 3.0
     pt_node_speed: float = 10.0
     abs_max_speed: float = 80.0
 
@@ -39,7 +41,7 @@ class PTParams:
     D_gain: float = 0.005
     history_len: int = 10
     coast_int: float = 5.0
-    brake_damp_f = 0.1
+    brake_damp_f = 0.01
 
 # {x, y} index desc.
 @dataclass
@@ -129,7 +131,7 @@ class PathTracker(Node):
         for i in range(PTParams.horizon_len):
             _eucl_x = prediction[i][PTIndex.x] - self.reference[i][PTIndex.x]
             _eucl_y = prediction[i][PTIndex.y] - self.reference[i][PTIndex.y]
-            _maneuver_cost += math.hypot(_eucl_x, _eucl_y) / (math.pow(i + 1, 3))
+            _maneuver_cost += math.hypot(_eucl_x, _eucl_y) / (math.pow(abs(PTParams.to_min_index - i) + 1, PTParams.cost_decay_f))
         return(_maneuver_cost)
 
     def visualize_candidate_prediction(self, np_pred: np.ndarray) -> None:
