@@ -19,6 +19,8 @@ class SCCode:
     optimal: int = 1
     offset_center: int = 2
 
+# pitlane is the spawn localition for the racecars
+# this dataclass provides switching boundaries and trigger distances
 @dataclass
 class Pitlane:
 
@@ -27,6 +29,30 @@ class Pitlane:
     entry_pt: Point = Point(x = 13.5, y = 532.65)
 
     # switch distance trigger thresholds
+    exit_trig_dist: float = 25.0
+    entry_trig_dist: float = 75.0
+
+# the fornt strech for the oval is closer to the pagoda and the pitlane
+@dataclass
+class FrontStretch:
+
+    # geometric centers for entry and exit
+    exit_pt: Point(x = -3.85, y = -125.14)
+    entry_pt: Point(x = -4.48, y = 524.64)
+
+     # switch distance trigger thresholds
+    exit_trig_dist: float = 25.0
+    entry_trig_dist: float = 75.0
+
+# the rear stretch consists of the pitlane exit and turn 3
+@dataclass
+class RearStretch:
+
+    # geometric centers for entry and exit
+    exit_pt: Point(x = 728.67, y = -114.24)
+    entry_pt: Point(x = 727.31, y = 513.55)
+
+     # switch distance trigger thresholds
     exit_trig_dist: float = 25.0
     entry_trig_dist: float = 75.0
 
