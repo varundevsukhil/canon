@@ -19,18 +19,21 @@ from rclpy.qos import QoSReliabilityPolicy
 @dataclass
 class PTParams:
 
+    # lateral control parameters
     max_steer: float = 2.0
     max_angle: float = 20.0
     gradient: float = 0.01
     output_scale: float = 2.5
     actuation_rate = 0.0025
 
+    # racecar kinematic bicycle model params
     wheelbase_len: float = 3.0
     time_tick: float = 0.4
     horizon_len: int = 10
     pt_node_speed: float = 20.0
     abs_max_speed: float = 80.0
 
+    # longitudinal control parameters
     P_gain: float = 0.05
     I_gain: float = 1e-6
     D_gain: float = 0.005
@@ -38,12 +41,16 @@ class PTParams:
     coast_int: float = 5.0
     brake_damp_f = 0.1
 
+# {x, y} index desc.
 @dataclass
 class PTIndex:
     x: int = 0
     y: int = 1
 
 class PathTracker(Node):
+    """
+    Given a reference spline, attempt to minimize the lateral and longitudinal errors
+    """
 
     def __init__(self, racecar_ns: str) -> None:
 
@@ -78,6 +85,7 @@ class PathTracker(Node):
     
     def update_reference_spline(self, spline: PoseArray) -> None:
 
+        # everytime the reference changes, reset and populate the new spline points
         _reference = np.empty([PTParams.horizon_len, 2])
         for i in range(len(spline.poses)):
             _pose = spline.poses[i]
@@ -126,6 +134,7 @@ class PathTracker(Node):
 
     def visualize_candidate_prediction(self, np_pred: np.ndarray) -> None:
 
+        # convert the optimal prediction to a pose_array for rviz
         self.prediction.poses = []
         for i in range(PTParams.horizon_len - 1):
             _pose = Pose()
@@ -185,13 +194,12 @@ class PathTracker(Node):
         _predictions = [self.predict_motion_for_candidate(odom, steer) for steer in self.candidates]
         _candidate_costs = [self.estimate_maneuver_cost(_prediction) for _prediction in _predictions]
         _optimal_idx = _candidate_costs.index(min(_candidate_costs))
+        self.visualize_candidate_prediction(_predictions[_optimal_idx])
         _raw_steer = -self.candidates[_optimal_idx] * PTParams.output_scale
         _steer_i = self.command.target_wheel_angle + PTParams.actuation_rate
         _steer_d = self.command.target_wheel_angle - PTParams.actuation_rate
         _steer_out = _steer_i if _raw_steer > _steer_i else _steer_d if _raw_steer < _steer_d else _raw_steer
         self.command.target_wheel_angle = _steer_out
-        
-        self.visualize_candidate_prediction(_predictions[_optimal_idx])
 
         # pubish all the desired information
         self.tf_pub.sendTransform(self.tf)
