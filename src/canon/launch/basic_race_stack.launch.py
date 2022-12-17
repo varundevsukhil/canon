@@ -12,8 +12,8 @@ class RacecarStack(object):
     def __init__(self, racecar_ns: str) -> None:
 
         self.racecar_ns = racecar_ns
-        self.racecar_stack_nodes = ["path_server", "path_tracker", "spline_control"]
-        self.nodes = [self.create_node("canon", node, [racecar_ns]) for node in self.racecar_stack_nodes]
+        self.stack_nodes = ["path_server", "path_tracker", "spline_control"]
+        self.nodes = [self.create_node("canon", node, [racecar_ns]) for node in self.stack_nodes]
     
     def create_node(self, package: str, executable: str, args: List[str]) -> Node:
         return(Node(
