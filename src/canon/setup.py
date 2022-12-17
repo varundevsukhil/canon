@@ -30,7 +30,7 @@ setup(
                 "bounds_logger", 
                 "path_tracker", 
                 "path_server",
-                "spline_control",
+                "argos",
             ]
         ],
     },

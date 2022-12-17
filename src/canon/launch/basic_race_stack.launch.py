@@ -12,7 +12,7 @@ class RacecarStack(object):
     def __init__(self, racecar_ns: str) -> None:
 
         self.racecar_ns = racecar_ns
-        self.stack_nodes = ["path_server", "path_tracker", "spline_control"]
+        self.stack_nodes = ["path_server", "path_tracker", "argos"]
         self.nodes = [self.create_node("canon", node, [racecar_ns]) for node in self.stack_nodes]
     
     def create_node(self, package: str, executable: str, args: List[str]) -> Node:
@@ -26,4 +26,4 @@ class RacecarStack(object):
 def generate_launch_description():
     racecar_1 = RacecarStack("car_1")
     racecar_2 = RacecarStack("car_2")
-    return(LaunchDescription([node for node in racecar_1.nodes + racecar_2.nodes]))
+    return(LaunchDescription([node for node in racecar_1.nodes]))
