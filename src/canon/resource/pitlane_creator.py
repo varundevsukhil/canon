@@ -9,6 +9,7 @@ import numpy as np
 from ament_index_python.packages import get_package_share_directory
 
 PL_WIDTH = 15.0
+PL_VEL = 15.0
 DESIRED_RES = 2.0
 
 class PitlaneCreator(object):
@@ -25,6 +26,16 @@ class PitlaneCreator(object):
             data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/{name}.csv")), delimiter = ",")
             for point in data_file:
                 pitlane_outside_bounds.append([float(point[0]), float(point[1])])
+        
+        # extend the pitlane exit region
+        for i in range(25):
+            [_ix, _iy] = pitlane_outside_bounds[-1]
+            [_ipx, _ipy] = pitlane_outside_bounds[-2]
+            _theta = math.atan2(_iy - _ipy, _ix - _ipx)
+            _nx = _ix + 10.0 * math.cos(_theta)
+            _ny = _iy + 10.0 * math.sin(_theta)
+            pitlane_outside_bounds.append([_nx, _ny])
+
         _pox = np.array([point[0] for point in pitlane_outside_bounds])
         _poy = np.array([point[1] for point in pitlane_outside_bounds])
         
@@ -68,7 +79,8 @@ class PitlaneCreator(object):
         _ipcy = np.array([point[1] for point in interpolated_centerline])
 
         # save the pitlane centerline to the "maps" directory
-        for i in range(len(_ipcx)): pitlane_file.writerow([_ipcx[i], _ipcy[i]])
+        for i in range(len(_ipcx)):
+            pitlane_file.writerow([_ipcx[i], _ipcy[i], PL_VEL])
         
         # visualize the points
         _, fig = plt.subplots(1, 1)

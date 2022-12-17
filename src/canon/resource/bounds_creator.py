@@ -9,7 +9,7 @@ import numpy as np
 from scipy import interpolate
 from ament_index_python.packages import get_package_share_directory
 
-T_WIDTH = 12.0
+T_WIDTH = 9.0
 
 class BoundsCreator(object):
 
