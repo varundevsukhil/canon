@@ -54,6 +54,7 @@ class PathServer(Node):
 
         # ROS initialization
         super().__init__(f"{racecar_ns}_path_server")
+        qos = QoSReliabilityPolicy.BEST_EFFORT
 
         # the static spline resources
         _pitlane, _pitlane_res = self.read_splines_info("pitlane_centerline")
@@ -71,14 +72,14 @@ class PathServer(Node):
         self.pt_spline = PoseArray()
         self.vel_offset = 0.0
         self.pt_spline.header.frame_id = "map"
-        self.lat_err_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_server/lat_err", QoSReliabilityPolicy.BEST_EFFORT)
-        self.spline_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_server/spline", QoSReliabilityPolicy.BEST_EFFORT)
-        self.ref_vel_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_server/ref_vel", QoSReliabilityPolicy.BEST_EFFORT)
+        self.lat_err_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_server/lat_err", qos)
+        self.spline_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_server/spline", qos)
+        self.ref_vel_pub = self.create_publisher(Float64, f"/{racecar_ns}/path_server/ref_vel", qos)
 
         # node subscribers and spinners
-        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.path_server_node, QoSReliabilityPolicy.BEST_EFFORT)
-        self.create_subscription(UInt8, f"/{racecar_ns}/argos/spline_code", self.update_target_spline, QoSReliabilityPolicy.BEST_EFFORT)
-        self.create_subscription(Float64, f"/{racecar_ns}/argos/vel_offset", self.update_vel_offset, QoSReliabilityPolicy.BEST_EFFORT)
+        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.path_server_node, qos)
+        self.create_subscription(UInt8, f"/{racecar_ns}/argos/spline_code", self.update_target_spline, qos)
+        self.create_subscription(Float64, f"/oracle/{racecar_ns}/vel_offset", self.update_vel_offset, qos)
     
     def update_target_spline(self, target_code: UInt8) -> None:
 
