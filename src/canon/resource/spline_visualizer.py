@@ -25,14 +25,9 @@ class SplineVisualizer(object):
         data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/outside_bounds.csv")), delimiter = ",")
         for point in data_file: _ox.append(float(point[0])), _oy.append(float(point[1]))
 
-        # read the interpolated points for the offset inner spline
-        _cix, _ciy = [], []
-        data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/offset_inner.csv")), delimiter = ",")
-        for point in data_file: _cix.append(float(point[0])), _ciy.append(float(point[1]))
-
-        # read the interpolated points for the offset outer spline
+        # read the interpolated points for the offset spline
         _cox, _coy = [], []
-        data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/offset_center.csv")), delimiter = ",")
+        data_file = csv.reader(open(os.path.expanduser(f"{rel_path}/offset.csv")), delimiter = ",")
         for point in data_file: _cox.append(float(point[0])), _coy.append(float(point[1]))
 
         # read the interpolated points for the optimal raceline
@@ -44,7 +39,6 @@ class SplineVisualizer(object):
         _, fig = plt.subplots(1, 1)
         fig.plot(_ix, _iy, "k-")
         fig.plot(_ox, _oy, "k-")
-        fig.plot(_cix, _ciy, "r-")
         fig.plot(_cox, _coy, "r-")
         fig.plot(_opx, _opy, "g-")
         fig.set_aspect("equal", "box")

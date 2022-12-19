@@ -6,10 +6,9 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scipy import interpolate
 from ament_index_python.packages import get_package_share_directory
 
-OFFSET = 10.0
+OFFSET = 5.0
 OFFSET_VEL = 0.0
 
 class BoundsCreator(object):
@@ -19,7 +18,7 @@ class BoundsCreator(object):
         # csv read/write control
         rel_path = os.path.join(get_package_share_directory("canon"), "maps")
         original_spline_file = csv.reader(open(os.path.expanduser(f"{rel_path}/optimal.csv")), delimiter = ",")
-        offset_spline_file = csv.writer(open(os.path.expanduser(f"{rel_path}/offset_inner.csv"), mode = "w"), delimiter = ",", quoting = csv.QUOTE_NONNUMERIC)
+        offset_spline_file = csv.writer(open(os.path.expanduser(f"{rel_path}/offset.csv"), mode = "w"), delimiter = ",", quoting = csv.QUOTE_NONNUMERIC)
 
         # read the raw logged points for the inner boundary
         _points = []
