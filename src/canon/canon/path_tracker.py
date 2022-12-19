@@ -24,7 +24,7 @@ class PTParams:
     max_angle: float = 20.0
     gradient: float = 0.01
     output_scale: float = 2.5
-    actuation_rate = 0.0025
+    actuation_rate = 0.00125
 
     # racecar kinematic bicycle model params
     wheelbase_len: float = 3.0

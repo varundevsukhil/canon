@@ -21,7 +21,7 @@ from ament_index_python.packages import get_package_share_directory
 class PSCode:
     pitlane: int = 0
     optimal: int = 1
-    offset_center: int = 2
+    offset: int = 2
 
 # path server node parameters
 # TODO: maybe move this to ROS param server?
@@ -32,7 +32,7 @@ class PSParams:
     horizon_len: int = 10
     pt_node_speed: float = 5.0
     lat_err_damp_f: float = 5.0
-    max_lat_err_f: int = 4
+    max_lat_err_f: int = 12
 
 # each point on the spline is a pose
 # we only care about {x, y, theta}, but ROS requires Quaternion
@@ -57,11 +57,11 @@ class PathServer(Node):
         qos = QoSReliabilityPolicy.BEST_EFFORT
 
         # the static spline resources
-        _pitlane, _pitlane_res = self.read_splines_info("pitlane_centerline")
+        _pitlane, _pitlane_res = self.read_splines_info("pitlane")
         _optimal, _optimal_res = self.read_splines_info("optimal")
-        _offset_center, _offset_center_res = self.read_splines_info("offset_center")
-        self.spline_points = (_pitlane, _optimal, _offset_center)
-        self.spline_res = (_pitlane_res, _optimal_res, _offset_center_res)
+        _offset, _offset_res = self.read_splines_info("offset")
+        self.spline_points = (_pitlane, _optimal, _offset)
+        self.spline_res = (_pitlane_res, _optimal_res, _offset_res)
 
         # localizer node variables
         self.active_spline = PSCode.pitlane
@@ -162,6 +162,7 @@ class PathServer(Node):
         self.pt_spline.poses = []
         _ref_vel = np.zeros(PSParams.horizon_len)
         _lat_sep_f = min(max(int(_lat_err * PSParams.lat_err_damp_f), 1), PSParams.max_lat_err_f)
+        _lat_sep_f = int(_lat_sep_f / 6) if self.active_spline == PSCode.pitlane else _lat_sep_f
         for i in range(PSParams.horizon_len):
             _pose = Pose()
             _t_idx = ((i + 1) * (skip + _lat_sep_f) + self.loc_index) % len(self.spline_points[self.active_spline])
