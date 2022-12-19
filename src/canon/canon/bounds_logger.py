@@ -7,6 +7,7 @@ import sys
 import os
 import atexit
 
+from rclpy.qos import QoSReliabilityPolicy
 from typing import List
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
@@ -26,6 +27,7 @@ class BoundsLogger(Node):
 
         # init node variables
         super().__init__("bounds_logger")
+        qos = QoSReliabilityPolicy.BEST_EFFORT
         rel_path  = os.path.join(get_package_share_directory("canon"), "maps")
         self.save_file = csv.writer(open(os.path.expanduser("{}/{}.csv".format(rel_path, save_name)), mode = "w"), delimiter = ",", quoting = csv.QUOTE_NONNUMERIC)
         atexit.register(self.write_data_to_file)
@@ -34,9 +36,9 @@ class BoundsLogger(Node):
         self.points = []
 
         # publishers, subscribers and callbacks
-        self.command_pub = self.create_publisher(VehicleControlData, f"/{racecar_ns}/command", 1)
+        self.command_pub = self.create_publisher(VehicleControlData, f"/{racecar_ns}/command", qos)
         self.create_subscription(Joy, "/joy", self.read_teleop, 1)
-        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.bounds_logger_node, 1)
+        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.bounds_logger_node, qos)
     
     def write_data_to_file(self) -> None:
 
