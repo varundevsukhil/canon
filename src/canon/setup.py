@@ -31,6 +31,7 @@ setup(
                 "path_tracker", 
                 "path_server",
                 "argos",
+                "oracle"
             ]
         ],
     },

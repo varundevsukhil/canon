@@ -26,4 +26,4 @@ class RacecarStack(object):
 def generate_launch_description():
     racecar_1 = RacecarStack("car_1")
     racecar_2 = RacecarStack("car_2")
-    return(LaunchDescription([node for node in racecar_1.nodes]))
+    return(LaunchDescription([node for node in racecar_1.nodes + racecar_2.nodes]))
