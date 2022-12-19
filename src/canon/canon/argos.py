@@ -8,7 +8,6 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from std_msgs.msg import UInt8, Float64
 from geometry_msgs.msg import Point
-from sensor_msgs.msg import Joy
 from dataclasses import dataclass
 from rclpy.qos import QoSReliabilityPolicy
 
@@ -32,50 +31,13 @@ class Pitlane:
     exit_trig_dist: float = 25.0
     entry_trig_dist: float = 75.0
 
-# the fornt strech for the oval is closer to the pagoda and the pitlane
-@dataclass
-class FrontStretch:
-
-    # geometric centers for entry and exit
-    exit_pt: Point(x = -3.85, y = -125.14)
-    entry_pt: Point(x = -4.48, y = 524.64)
-
-     # switch distance trigger thresholds
-    exit_trig_dist: float = 25.0
-    entry_trig_dist: float = 75.0
-
-# the rear stretch consists of the pitlane exit and turn 3
-@dataclass
-class RearStretch:
-
-    # geometric centers for entry and exit
-    exit_pt: Point(x = 728.67, y = -114.24)
-    entry_pt: Point(x = 727.31, y = 513.55)
-
-     # switch distance trigger thresholds
-    exit_trig_dist: float = 25.0
-    entry_trig_dist: float = 75.0
-
-# each static spline has a velocity offset associated with it
-@dataclass
-class VelocityOffset:
-    pitlane: float = 0.0
-    optimal: float = 0.0
-    offset_center: float = 3.5
-
-# TEST: use joycon to make spline switch
-@dataclass
-class JoyCode:
-    pitlane: int = 1
-    optimal: int = 2
-    offset_center: int = 3
-
 class ARGOS(Node):
 
     def __init__(self, racecar_ns: str) -> None:
 
         # ROS node requirements
         super().__init__(f"{racecar_ns}_argos")
+        qos = QoSReliabilityPolicy.BEST_EFFORT
 
         # we always spawn in the pitlane, so go to the racetrack ASAP
         self.on_racetrack = False
@@ -83,33 +45,30 @@ class ARGOS(Node):
     
         # node publishers and data
         self.desired_code = SCCode.pitlane
-        self.desired_offset = VelocityOffset.pitlane
-        self.code_pub = self.create_publisher(UInt8, f"/{racecar_ns}/argos/spline_code", QoSReliabilityPolicy.BEST_EFFORT)
-        self.vel_offset_pub = self.create_publisher(Float64, f"/{racecar_ns}/argos/vel_offset", QoSReliabilityPolicy.BEST_EFFORT)
+        self.code_pub = self.create_publisher(UInt8, f"/{racecar_ns}/argos/spline_code", qos)
+        self.vel_offset_pub = self.create_publisher(Float64, f"/{racecar_ns}/argos/vel_offset", qos)
 
         # node subscribers and spinners
-        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.spline_control_node, QoSReliabilityPolicy.BEST_EFFORT)
-        self.create_subscription(Joy, "/joy", self.update_spline_code, QoSReliabilityPolicy.BEST_EFFORT)
+        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.spline_control_node, qos)
+        self.create_subscription(UInt8, f"/oracle/{racecar_ns}/code", self.update_spline_code, qos)
     
-    def update_spline_code(self, joy: Joy) -> Node:
+    def update_spline_code(self, code: UInt8) -> Node:
 
         # if the racecar is not on the race track, ignore switch commands
         if self.on_racetrack:
 
             # transition to optimal spline
-            if joy.buttons[JoyCode.optimal] and self.desired_code != SCCode.optimal:
+            if code.data == SCCode.optimal and self.desired_code != SCCode.optimal:
                 self.get_logger().info("switching to optimal spline")
                 self.desired_code = SCCode.optimal
-                self.desired_offset = VelocityOffset.optimal
             
             # transition to optimal spline
-            elif joy.buttons[JoyCode.offset_center] and self.desired_code != SCCode.offset_center:
+            elif code.data == SCCode.offset_center and self.desired_code != SCCode.offset_center:
                 self.get_logger().info("switching to centreline offset spline")
                 self.desired_code = SCCode.offset_center
-                self.desired_offset = VelocityOffset.offset_center
             
             # request transition to pitlane
-            elif joy.buttons[JoyCode.pitlane] and not self.to_pitlane:
+            elif code.data == SCCode.pitlane and not self.to_pitlane:
                 self.get_logger().info("requesting switch to pitlane spline")
                 self.to_pitlane = True
 
@@ -123,7 +82,6 @@ class ARGOS(Node):
             if math.hypot(_eucl_x, _eucl_y) < Pitlane.exit_trig_dist:
                 self.get_logger().info("exiting the pitlane")
                 self.desired_code = SCCode.optimal
-                self.desired_offset = VelocityOffset.optimal
                 self.on_racetrack = True
         
         # if pitlane entry is requested, wait until the transition is possible
@@ -134,13 +92,11 @@ class ARGOS(Node):
             if math.hypot(_eucl_x, _eucl_y) < Pitlane.entry_trig_dist:
                 self.get_logger().info("entering the pitlane")
                 self.desired_code = SCCode.pitlane
-                self.desired_offset = VelocityOffset.pitlane
                 self.on_racetrack = False
                 self.to_pitlane = False
         
         # publish spline codes to the path_server node
         self.code_pub.publish(UInt8(data = self.desired_code))
-        self.vel_offset_pub.publish(Float64(data = self.desired_offset))
 
 def argos():
     rclpy.init()
