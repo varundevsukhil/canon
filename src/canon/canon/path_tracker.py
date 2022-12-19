@@ -57,6 +57,7 @@ class PathTracker(Node):
     def __init__(self, racecar_ns: str) -> None:
 
         super().__init__(f"{racecar_ns}_path_tracker")
+        qos = QoSReliabilityPolicy.BEST_EFFORT
 
         # dynamic transform
         self.tf_pub = TransformBroadcaster(self)
@@ -78,12 +79,12 @@ class PathTracker(Node):
         self.command = VehicleControlData()
         self.prediction = PoseArray()
         self.prediction.header.frame_id = "map"
-        self.command_pub = self.create_publisher(VehicleControlData, f"/{racecar_ns}/command", QoSReliabilityPolicy.BEST_EFFORT)
-        self.pred_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_tracker/prediction", QoSReliabilityPolicy.BEST_EFFORT)
+        self.command_pub = self.create_publisher(VehicleControlData, f"/{racecar_ns}/command", qos)
+        self.pred_pub = self.create_publisher(PoseArray, f"/{racecar_ns}/path_tracker/prediction", qos)
 
-        self.create_subscription(PoseArray, f"/{racecar_ns}/path_server/spline", self.update_reference_spline, QoSReliabilityPolicy.BEST_EFFORT)
-        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.path_tracker_node, QoSReliabilityPolicy.BEST_EFFORT)
-        self.create_subscription(Float64, f"/{racecar_ns}/path_server/ref_vel", self.longitudinal_control_node, QoSReliabilityPolicy.BEST_EFFORT)
+        self.create_subscription(PoseArray, f"/{racecar_ns}/path_server/spline", self.update_reference_spline, qos)
+        self.create_subscription(Odometry, f"/{racecar_ns}/odometry", self.path_tracker_node, qos)
+        self.create_subscription(Float64, f"/{racecar_ns}/path_server/ref_vel", self.longitudinal_control_node, qos)
     
     def update_reference_spline(self, spline: PoseArray) -> None:
 
