@@ -40,7 +40,7 @@ class SplineVisualizer(object):
         fig.plot(_ix, _iy, "k-")
         fig.plot(_ox, _oy, "k-")
         fig.plot(_cox, _coy, "r-")
-        fig.plot(_opx, _opy, "g-")
+        fig.plot(_opx, _opy, "g+")
         fig.set_aspect("equal", "box")
         plt.show()
       
