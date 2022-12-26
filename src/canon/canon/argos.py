@@ -64,7 +64,7 @@ class ARGOS(Node):
             
             # transition to optimal spline
             elif code.data == SCCode.offset_center and self.desired_code != SCCode.offset_center:
-                self.get_logger().info("switching to centreline offset spline")
+                self.get_logger().info("switching to offset spline")
                 self.desired_code = SCCode.offset_center
             
             # request transition to pitlane
