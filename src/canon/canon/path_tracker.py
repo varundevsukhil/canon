@@ -41,7 +41,7 @@ class PTParams:
     D_gain: float = 0.005
     history_len: int = 10
     coast_int: float = 5.0
-    brake_damp_f = 0.01
+    brake_damp_f = 0.001
 
 # {x, y} index desc.
 @dataclass
