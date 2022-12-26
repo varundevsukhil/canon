@@ -3,7 +3,6 @@
 import rclpy
 import math
 
-from typing import Tuple
 from rclpy.node import Node
 from rclpy.qos import QoSReliabilityPolicy
 from geometry_msgs.msg import Point
@@ -18,7 +17,7 @@ class OCode:
     # trajectory enum codes
     pitlane: int = 0
     optimal: int = 1
-    offset_center: int = 2
+    offset: int = 2
 
     # vel offsets for racecar agents
     attacker_vel_offset: float = 5.0
@@ -40,6 +39,7 @@ class CarNS:
     attacker: int = 0
     defender: int = 1
 
+# a simple dataclass of oracle sequence
 @dataclass
 class Sequence:
     passing_defender: int = 0
@@ -143,7 +143,7 @@ class Oracle(Node):
                 self.in_maneuver = False
                 self.internal_states = [False, False]
             
-            self.racecars[self.role[CarNS.attacker]].publish_info(OCode.offset_center, OCode.attacker_vel_offset)
+            self.racecars[self.role[CarNS.attacker]].publish_info(OCode.offset, OCode.attacker_vel_offset)
             self.racecars[self.role[CarNS.defender]].publish_info(OCode.optimal, OCode.defender_vel_offset)
 
             if not self.internal_states[Sequence.passing_defender]:
