@@ -8,7 +8,6 @@ import os
 import atexit
 
 from rclpy.qos import QoSReliabilityPolicy
-from typing import List
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
@@ -22,6 +21,9 @@ STEER_LIMIT = 0.125
 RESOLUTION = 10.0
 
 class BoundsLogger(Node):
+    """
+    Create a lcontrol points by manually driving the racecar around the race-track bounds.
+    """
 
     def __init__(self, racecar_ns: str, save_name: str) -> None:
 

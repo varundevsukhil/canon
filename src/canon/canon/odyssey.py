@@ -163,11 +163,15 @@ class Odyssey(Node):
     
     def odyssey_node(self) -> None:
 
+        # get the poses and stretch information
         _attacker = self.racecars[CarNS.attacker].get_planar_pose()
         _defender = self.racecars[CarNS.defender].get_planar_pose()
         _stretch = FrontStretch if self.front_stretch else RearStretch
 
+        # if, the racecar is already in a maneuver
         if self.in_maneuver:
+
+            # montior the end of the current stretch, and declare a failure if it is triggered
             _eucl_x = _attacker.x - _stretch.exit_pt.x
             _eucl_y = _attacker.y - _stretch.exit_pt.y
             if math.hypot(_eucl_x, _eucl_y) < (_stretch.exit_trig_dist):
@@ -176,6 +180,7 @@ class Odyssey(Node):
                 self.attacker_states = [False, False, False]
                 self.defender_blocking = False
             
+            # trigger an overtake
             if not self.attacker_states[AttackSequence.waiting_for_trigger]:
                 self.attacker_states[AttackSequence.waiting_for_trigger] = True
                 self.get_logger().info(f"car_{self.role[CarNS.attacker] + 1} is attempting an overtake")
@@ -183,6 +188,7 @@ class Odyssey(Node):
                 self.racecars[self.role[CarNS.attacker]].publish_info(OCode.offset, OCode.defender_vel_offset, OCode.k_attack_wait)
                 time.sleep(OCode.t_interval)
             
+            # wait until the opponent is in range for an sequence update
             elif not self.defender_blocking:
                 self.defender_blocking = True
                 self.get_logger().info(f"car_{self.role[CarNS.defender] + 1} is attempting a position defense")
@@ -190,6 +196,7 @@ class Odyssey(Node):
                 self.racecars[self.role[CarNS.attacker]].publish_info(OCode.offset, OCode.defender_vel_offset, OCode.k_attack_pass)
                 time.sleep(OCode.t_interval)
             
+            # pass the opponent and update the overtake sequence
             elif not self.attacker_states[AttackSequence.passing_defender]:
                 _eucl_x = _attacker.x - _defender.x
                 _eucl_y = _attacker.y - _defender.y
@@ -199,6 +206,7 @@ class Odyssey(Node):
                     self.get_logger().info(f"car_{self.role[CarNS.attacker] + 1} in range for overtake")
                     self.attacker_states[AttackSequence.passing_defender] = True
             
+            # complete the overtake seqence and fallback
             elif not self.attacker_states[AttackSequence.passing_complete]:
                 _eucl_x = _attacker.x - _defender.x
                 _eucl_y = _attacker.y - _defender.y
@@ -208,6 +216,7 @@ class Odyssey(Node):
                     self.racecars[self.role[CarNS.attacker]].publish_info(OCode.optimal, OCode.defender_vel_offset, OCode.k_defense_wait)
                     self.attacker_states[AttackSequence.passing_complete] = True
             
+            # reverse the attacker and defender roles and the target stretch
             if not False in self.attacker_states:
                 self.get_logger().info(f"car_{self.role[CarNS.attacker] + 1} overtake of car_{self.role[CarNS.defender] + 1} succesful")
                 

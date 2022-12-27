@@ -131,11 +131,15 @@ class Oracle(Node):
     
     def oracle_node(self) -> None:
 
+        # get the poses and stretch information
         _attacker = self.racecars[CarNS.attacker].get_planar_pose()
         _defender = self.racecars[CarNS.defender].get_planar_pose()
         _stretch = FrontStretch if self.front_stretch else RearStretch
 
+        # if, the racecar is already in a maneuver
         if self.in_maneuver:
+
+            # montior the end of the current stretch, and declare a failure if it is triggered
             _eucl_x = _attacker.x - _stretch.exit_pt.x
             _eucl_y = _attacker.y - _stretch.exit_pt.y
             if math.hypot(_eucl_x, _eucl_y) < (_stretch.exit_trig_dist):
@@ -146,6 +150,7 @@ class Oracle(Node):
             self.racecars[self.role[CarNS.attacker]].publish_info(OCode.offset, OCode.attacker_vel_offset)
             self.racecars[self.role[CarNS.defender]].publish_info(OCode.optimal, OCode.defender_vel_offset)
 
+            # trigger an overtake
             if not self.internal_states[Sequence.passing_defender]:
                 _eucl_x = _attacker.x - _defender.x
                 _eucl_y = _attacker.y - _defender.y
@@ -153,6 +158,7 @@ class Oracle(Node):
                     self.get_logger().info(f"car_{self.role[CarNS.attacker] + 1} in range for overtake")
                     self.internal_states[Sequence.passing_defender] = True
             
+            # pass the opponent and update the overtake sequence
             elif not self.internal_states[Sequence.passing_complete]:
                 _eucl_x = _attacker.x - _defender.x
                 _eucl_y = _attacker.y - _defender.y
@@ -160,6 +166,7 @@ class Oracle(Node):
                     self.get_logger().info(f"car_{self.role[CarNS.attacker] + 1} has passed the opponent")
                     self.internal_states[Sequence.passing_complete] = True
             
+            # reverse the attacker and defender roles and the target stretch
             if not False in self.internal_states:
                 self.get_logger().info(f"car_{self.role[CarNS.attacker] + 1} overtake of car_{self.role[CarNS.defender] + 1} succesful")
                 
