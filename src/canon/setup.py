@@ -16,7 +16,8 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
         (os.path.join("share", package_name, "maps"), glob("maps/*.csv")),
-        (os.path.join("share", package_name, "data"), glob("data/*"))],
+        (os.path.join("share", package_name, "data"), glob("data/*")),
+        (os.path.join("share", package_name, "rviz"), glob("rviz/*.config.rviz"))],
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="Varundev Sukhil",
@@ -27,13 +28,14 @@ setup(
     entry_points={
         "console_scripts": [
             f"{node} = {package_name}.{node}:{node}" for node in [
-                "bounds_logger", 
+                # "bounds_logger", 
                 "path_tracker", 
                 "path_server",
                 "argos",
                 "oracle",
                 "odyssey",
-                "console"
+                "console",
+                "visualize"
             ]
         ],
     },
