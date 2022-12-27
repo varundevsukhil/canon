@@ -30,7 +30,7 @@ class PTParams:
     wheelbase_len: float = 3.0
     time_tick: float = 0.4
     horizon_len: int = 10
-    to_min_index: int = 4
+    to_min_index: int = 6
     cost_decay_f: float = 3.0
     pt_node_speed: float = 10.0
     abs_max_speed: float = 80.0
@@ -143,7 +143,7 @@ class PathTracker(Node):
             _pose = Pose()
             _eucl_x = np_pred[i + 1][PTIndex.x] - np_pred[i][PTIndex.x]
             _eucl_y = np_pred[i + 1][PTIndex.y] - np_pred[i][PTIndex.y]
-            _yaw = -math.atan2(_eucl_y, _eucl_x)
+            _yaw = math.atan2(_eucl_y, _eucl_x)
             _pose.position = Point(x = np_pred[i][PTIndex.x], y = np_pred[i][PTIndex.y])
             _pose.orientation = Quaternion(z = math.sin(_yaw / 2.0), w = math.cos(_yaw / 2.0))
             self.prediction.poses.append(_pose)

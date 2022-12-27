@@ -162,7 +162,7 @@ class PathServer(Node):
         self.pt_spline.poses = []
         _ref_vel = np.zeros(PSParams.horizon_len)
         _lat_sep_f = min(max(int(_lat_err * PSParams.lat_err_damp_f), 1), PSParams.max_lat_err_f)
-        _lat_sep_f = int(_lat_sep_f / 6) if self.active_spline == PSCode.pitlane else _lat_sep_f
+        _lat_sep_f = int(_lat_sep_f / 6) if self.active_spline == PSCode.pitlane else int(_lat_sep_f / 2)
         for i in range(PSParams.horizon_len):
             _pose = Pose()
             _t_idx = ((i + 1) * (skip + _lat_sep_f) + self.loc_index) % len(self.spline_points[self.active_spline])
