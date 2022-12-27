@@ -12,6 +12,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSReliabilityPolicy
 from geometry_msgs.msg import Pose, PoseArray, Point, Quaternion
 from nav_msgs.msg import Odometry
+from std_msgs.msg import UInt8
 from dataclasses import dataclass
 from ament_index_python.packages import get_package_share_directory
 
@@ -133,21 +134,37 @@ class Visualize(Node):
         super().__init__("visualize")
         qos = QoSReliabilityPolicy.BEST_EFFORT
 
+        self.optimal_spline = Bounds("optimal")
+        self.offset_spline = Bounds("offset")
         self.inside_bounds = Bounds("inside_bounds")
         self.outside_bounds = Bounds("outside_bounds")
 
+        self.current_code = 1
         self.inside_bounds_pub = self.create_publisher(PoseArray, f"/visualize/inside_bounds", qos)
         self.outside_bounds_pub = self.create_publisher(PoseArray, f"/visualize/outside_bounds", qos)
+        self.reference_spline_pub = self.create_publisher(PoseArray, f"/visualize/reference_spline", qos)
 
         self.create_subscription(Odometry, f"/{car_ns}/odometry", self.inside_bounds.visualize_bounds, qos)
         self.create_subscription(Odometry, f"/{car_ns}/odometry", self.outside_bounds.visualize_bounds, qos)
+        self.create_subscription(Odometry, f"/{car_ns}/odometry", self.optimal_spline.visualize_bounds, qos)
+        self.create_subscription(Odometry, f"/{car_ns}/odometry", self.offset_spline.visualize_bounds, qos)
+        self.create_subscription(UInt8, f"/{car_ns}/argos/spline_code", self.update_target_spline, qos)
         self.create_timer(0.05, self.visualize_node)
     
+    def update_target_spline(self, code: UInt8) -> None:
+
+        if code.data == 1 and self.current_code == 2:
+            self.current_code = 1
+            self.optimal_spline.loc_found = False
+        elif code.data == 2 and self.current_code == 1:
+            self.current_code = 2
+            self.offset_spline.loc_found = False
+
     def visualize_node(self) -> None:
 
         self.inside_bounds_pub.publish(self.inside_bounds.points)
         self.outside_bounds_pub.publish(self.outside_bounds.points)
-
+        self.reference_spline_pub.publish(self.optimal_spline.points if self.current_code == 1 else self.offset_spline.points)
 
 def visualize():
     rclpy.init()

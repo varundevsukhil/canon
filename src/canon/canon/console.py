@@ -64,7 +64,7 @@ class Console(Node):
 
         # Tk node config
         self.gui = Tk()
-        self.gui.geometry(f"230x200+{loc}+75")
+        self.gui.geometry(f"230x200+{loc}+110")
         self.gui.wm_attributes("-type", "splash")
         self.gui.wm_attributes("-topmost", True)
         l_name = "Car 1 [Blue]" if car_ns == "car_1" else "Car 2 [Orange]"
