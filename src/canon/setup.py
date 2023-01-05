@@ -16,7 +16,7 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
         (os.path.join("share", package_name, "maps"), glob("maps/*.csv")),
-        (os.path.join("share", package_name, "data"), glob("data/*")),
+        (os.path.join("share", package_name, "plots"), glob("data/plots/*")),
         (os.path.join("share", package_name, "rviz"), glob("rviz/*.config.rviz"))],
     install_requires=["setuptools"],
     zip_safe=True,

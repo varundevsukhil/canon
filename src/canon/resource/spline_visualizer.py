@@ -3,12 +3,11 @@
 import os
 import csv
 import matplotlib.pyplot as plt
-import numpy as np
 
 from ament_index_python.packages import get_package_share_directory
 
-
 class SplineVisualizer(object):
+    """A class to visualize all the static splines in this repository."""
 
     def __init__(self) -> None:
 
