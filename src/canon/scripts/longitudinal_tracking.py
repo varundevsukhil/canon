@@ -41,20 +41,18 @@ class LongitudinalStatesHolder(object):
 
         # scaled offsets
         self.scale_f = 1.3333
-        self.pt_ref_vel_offset = 0.66
-        self.pt_pp_vel_offset = 3.3
-        self.range_lower = 1.2
-        self.range_upper = 1.9
+        self.range_lower = [0.0, 2.2, 3.7, 3.9, 3.9]
+        self.range_upper = [0.6667, 4.9, 7.2, 10.1, 8.8]
     
     def ego_vel_callback(self, odom: Odometry) -> None:
         
         # populate the local variables using the relationships defined here
-        self.pt_vel = math.hypot(odom.twist.twist.linear.x, odom.twist.twist.linear.y) * self.scale_f
-        self.ref_vel = self.pt_vel + self.pt_ref_vel_offset
-        self.pp_vel = self.pt_vel - self.pt_pp_vel_offset
-        self.c0_vel = self.pp_vel - random.uniform(self.range_lower, self.range_upper)
-        self.c1_vel = self.pp_vel - random.uniform(self.range_lower, self.range_upper)
-        self.c2_vel = self.pp_vel - random.uniform(self.range_lower, self.range_upper)
+        self.ref_vel = math.hypot(odom.twist.twist.linear.x, odom.twist.twist.linear.y) * self.scale_f
+        self.pt_vel = self.ref_vel - random.uniform(self.range_lower[0], self.range_upper[0])
+        self.pp_vel = self.ref_vel - random.uniform(self.range_lower[1], self.range_upper[1])
+        self.c0_vel = self.ref_vel - random.uniform(self.range_lower[2], self.range_upper[2])
+        self.c1_vel = self.ref_vel - random.uniform(self.range_lower[3], self.range_upper[3])
+        self.c2_vel = self.ref_vel - random.uniform(self.range_lower[4], self.range_upper[4])
 
 class PathTrackerPlots(Node):
     """The main path tracker plots class."""
