@@ -7,5 +7,6 @@ log/
 .vscode/
 
 # cache and dependent repos
-src/global_racetrajectory_optimization/
 src/canon/canon/__pycache__/
+src/global_racetrajectory_optimization/
+src/python_robotics/
